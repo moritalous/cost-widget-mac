@@ -1,0 +1,58 @@
+name: CostWidget
+
+options:
+  bundleIdPrefix: com.moritalous
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+  groupOrdering:
+    - pattern: "CostWidget/**"
+      order: [sources, resources]
+    - pattern: "CostWidgetWidget/**"
+      order: [sources, resources]
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    ARCHS: arm64
+    ONLY_ACTIVE_ARCH: NO
+  configs:
+    Debug:
+      SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+    Release:
+      SWIFT_OPTIMIZATION_LEVEL: "-O"
+
+targets:
+  CostWidget:
+    type: application
+    platform: macOS
+    sources:
+      - path: CostWidget
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.moritalous.cost-widget
+        PRODUCT_NAME: CostWidget
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
+        INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2026 moritalous"
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+    dependencies:
+      - target: CostWidgetWidget
+        embed: true
+
+  CostWidgetWidget:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: CostWidgetWidget
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.moritalous.cost-widget.widget
+        PRODUCT_NAME: CostWidgetWidget
+        INFOPLIST_FILE: CostWidgetWidget/Info.plist
+        SKIP_INSTALL: YES
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO

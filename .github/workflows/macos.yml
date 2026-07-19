@@ -1,0 +1,48 @@
+name: macOS build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate --spec project.yml
+
+      - name: Build unsigned arm64 app
+        run: |
+          xcodebuild \
+            -project CostWidget.xcodeproj \
+            -scheme CostWidget \
+            -configuration Release \
+            -sdk macosx \
+            -arch arm64 \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: Package app
+        run: |
+          ditto -c -k --keepParent \
+            build/Build/Products/Release/CostWidget.app \
+            CostWidget-macos-arm64-unsigned.zip
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CostWidget-macos-arm64-unsigned
+          path: CostWidget-macos-arm64-unsigned.zip
