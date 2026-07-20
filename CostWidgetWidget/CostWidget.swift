@@ -108,4 +108,4 @@ struct CostWidget: Widget {
 @main
 struct CostWidgetWidgetBundle: WidgetBundle { var body: some Widget { CostWidget() } }
 
-#Preview(as: .systemMedium) { CostWidget() } timeline: { CostTimelineProvider().placeholder(in: .init()) }
+#Preview(as: .systemMedium) { CostWidget() } timeline: { CostEntry(date: .now, snapshot: .notConfigured) }
