@@ -8,7 +8,7 @@ The first milestone is an Apple Silicon (`arm64`) unsigned preview build with sa
 
 1. Push a change or open a pull request.
 2. Open the **macOS build** workflow in GitHub Actions.
-3. Download the `CostWidget-macos-arm64-unsigned` artifact.
+3. Download the `CostWidget-macos-arm64-adhoc` artifact.
 4. Unzip it on an Apple Silicon Mac.
 5. Open `CostWidget.app` once, then add **Token Cost** from the macOS widget gallery.
 
