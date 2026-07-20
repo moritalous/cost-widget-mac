@@ -38,6 +38,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.moritalous.cost-widget
         PRODUCT_NAME: CostWidget
         INFOPLIST_FILE: CostWidget/Info.plist
+        CODE_SIGN_ENTITLEMENTS: CostWidget/CostWidget.entitlements
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
         INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2026 moritalous"
         CODE_SIGNING_ALLOWED: NO
@@ -58,6 +59,7 @@ targets:
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_FILE: CostWidgetWidget/Info.plist
+        CODE_SIGN_ENTITLEMENTS: CostWidgetWidget/CostWidgetWidget.entitlements
         SKIP_INSTALL: YES
         CODE_SIGNING_ALLOWED: NO
         CODE_SIGNING_REQUIRED: NO
