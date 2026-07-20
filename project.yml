@@ -19,6 +19,8 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     ARCHS: arm64
     ONLY_ACTIVE_ARCH: NO
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
   configs:
     Debug:
       SWIFT_OPTIMIZATION_LEVEL: "-Onone"
