@@ -55,6 +55,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.moritalous.cost-widget.widget
         PRODUCT_NAME: CostWidgetWidget
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_FILE: CostWidgetWidget/Info.plist
         SKIP_INSTALL: YES
         CODE_SIGNING_ALLOWED: NO
