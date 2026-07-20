@@ -30,7 +30,7 @@ jobs:
             -scheme CostWidget \
             -configuration Release \
             -sdk macosx \
-            -destination 'platform=macOS,arch=arm64'
+            -destination 'platform=macOS,arch=arm64' \
             -arch arm64 \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
