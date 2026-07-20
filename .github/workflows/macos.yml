@@ -48,6 +48,7 @@ jobs:
       - name: Validate PluginKit registration
         run: |
           /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f build/Build/Products/Release/CostWidget.app
+          pluginkit -a build/Build/Products/Release/CostWidget.app/Contents/PlugIns/CostWidgetWidget.appex
           pluginkit -m -A -D -i com.moritalous.cost-widget.widget | tee plugin-registration.txt
           test -s plugin-registration.txt
 
