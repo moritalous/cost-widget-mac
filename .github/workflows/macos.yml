@@ -42,13 +42,13 @@ jobs:
         run: |
           ditto -c -k --keepParent \
             build/Build/Products/Release/CostWidget.app \
-            CostWidget-macos-arm64-unsigned.zip
+            CostWidget-macos-arm64-adhoc.zip
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v6
         with:
-          name: CostWidget-macos-arm64-unsigned
-          path: CostWidget-macos-arm64-unsigned.zip
+          name: CostWidget-macos-arm64-adhoc
+          path: CostWidget-macos-arm64-adhoc.zip
 
 
   release:
@@ -61,14 +61,14 @@ jobs:
       - name: Download build artifact
         uses: actions/download-artifact@v6
         with:
-          name: CostWidget-macos-arm64-unsigned
+          name: CostWidget-macos-arm64-adhoc
           path: .
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${GITHUB_REF_NAME}" \\
-            CostWidget-macos-arm64-unsigned.zip \\
+            CostWidget-macos-arm64-adhoc.zip \\
             --repo "${GITHUB_REPOSITORY}" \\
             --title "CostWidget ${GITHUB_REF_NAME}" \\
             --generate-notes
