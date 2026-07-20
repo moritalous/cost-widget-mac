@@ -33,6 +33,7 @@ targets:
     platform: macOS
     sources:
       - path: CostWidget
+      - path: Shared
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.moritalous.cost-widget
@@ -52,6 +53,7 @@ targets:
     platform: macOS
     sources:
       - path: CostWidgetWidget
+      - path: Shared
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.moritalous.cost-widget.widget

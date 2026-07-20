@@ -12,7 +12,7 @@ The first milestone is an Apple Silicon (`arm64`) unsigned preview build with sa
 4. Unzip it on an Apple Silicon Mac.
 5. Open `CostWidget.app` once, then add **Token Cost** from the macOS widget gallery.
 
-The current widget intentionally uses sample data. Claude Code log access, `ccusage`, and App Group sharing will be added after the first real-Mac widget validation.
+Cost Widget bundles `ccusage` for Apple Silicon. On first launch, choose your macOS home folder in the app and allow read access. The app then aggregates supported local AI CLI sources (including Claude Code and Codex) and writes a widget snapshot. Claude Code's five-hour block is displayed separately because it is Claude-specific.
 
 ## Local project generation on macOS
 

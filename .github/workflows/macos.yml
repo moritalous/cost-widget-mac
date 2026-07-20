@@ -17,6 +17,14 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v5
 
+      - name: Bundle ccusage for Apple Silicon
+        run: |
+          npm pack @ccusage/ccusage-darwin-arm64@20.0.17
+          mkdir -p CostWidget/Resources/Tools
+          tar -xzf ccusage-ccusage-darwin-arm64-20.0.17.tgz
+          mv package/bin/ccusage CostWidget/Resources/Tools/ccusage
+          chmod +x CostWidget/Resources/Tools/ccusage
+
       - name: Install XcodeGen
         run: brew install xcodegen
 
@@ -35,6 +43,8 @@ jobs:
             CODE_SIGNING_ALLOWED=YES \
             CODE_SIGNING_REQUIRED=NO \
             build
+          codesign --force --sign - --entitlements Scripts/ccusage.entitlements build/Build/Products/Release/CostWidget.app/Contents/Resources/Tools/ccusage
+          codesign --force --sign - --entitlements CostWidget/CostWidget.entitlements build/Build/Products/Release/CostWidget.app
           codesign --verify --deep --strict --verbose=2 build/Build/Products/Release/CostWidget.app
           codesign -d --entitlements :- build/Build/Products/Release/CostWidget.app 2>&1 | grep -q "com.apple.security.app-sandbox"
           codesign -d --entitlements :- build/Build/Products/Release/CostWidget.app/Contents/PlugIns/CostWidgetWidget.appex 2>&1 | grep -q "com.apple.security.app-sandbox"

@@ -3,27 +3,20 @@ import WidgetKit
 
 struct CostEntry: TimelineEntry {
     let date: Date
-    let currentBlock: String
-    let today: String
-    let month: String
+    let snapshot: UsageSnapshot
 }
 
 struct CostTimelineProvider: TimelineProvider {
     func placeholder(in context: Context) -> CostEntry {
-        CostEntry(date: .now, currentBlock: "$1.24", today: "$3.87", month: "$42.16")
+        CostEntry(date: .now, snapshot: UsageSnapshot(updatedAt: .now, today: UsageMetric(costUSD: 3.87, totalTokens: 120_000), month: UsageMetric(costUSD: 42.16, totalTokens: 1_800_000), agents: [AgentBreakdown(agent: "claude", metric: UsageMetric(costUSD: 30, totalTokens: 1_100_000)), AgentBreakdown(agent: "codex", metric: UsageMetric(costUSD: 12.16, totalTokens: 700_000)], claudeBlock: ClaudeBlock(costUSD: 1.24, totalTokens: 42_000, remainingMinutes: 160, range: "10:00–15:00"), statusMessage: nil))
     }
 
     func getSnapshot(in context: Context, completion: @escaping (CostEntry) -> Void) {
-        completion(placeholder(in: context))
+        completion(CostEntry(date: .now, snapshot: UsageSnapshotStore.load()))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<CostEntry>) -> Void) {
-        let entry = CostEntry(
-            date: .now,
-            currentBlock: "$1.24",
-            today: "$3.87",
-            month: "$42.16"
-        )
+        let entry = CostEntry(date: .now, snapshot: UsageSnapshotStore.load())
         let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: entry.date) ?? entry.date.addingTimeInterval(900)
         completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
     }
@@ -35,25 +28,18 @@ struct CostWidgetView: View {
 
     var body: some View {
         switch family {
-        case .systemSmall:
-            smallView
-        case .systemLarge:
-            largeView
-        default:
-            mediumView
+        case .systemSmall: smallView
+        case .systemLarge: largeView
+        default: mediumView
         }
     }
 
     private var smallView: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label("Cost", systemImage: "chart.bar.fill")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text(entry.currentBlock)
-                .font(.title2.weight(.bold))
-            Text("current block")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            Label("Token Cost", systemImage: "chart.bar.fill").font(.caption).foregroundStyle(.secondary)
+            Text(entry.snapshot.today.costUSD, format: .currency(code: "USD")).font(.title2.weight(.bold))
+            Text("today · all sources").font(.caption2).foregroundStyle(.secondary)
+            if let message = entry.snapshot.statusMessage { Text(message).font(.caption2).lineLimit(3).foregroundStyle(.secondary) }
         }
     }
 
@@ -61,38 +47,47 @@ struct CostWidgetView: View {
         VStack(alignment: .leading, spacing: 10) {
             header
             HStack(spacing: 20) {
-                metric("Current block", entry.currentBlock)
-                metric("Today", entry.today)
-                metric("This month", entry.month)
+                metric("Today", entry.snapshot.today)
+                metric("This month", entry.snapshot.month)
+                if let block = entry.snapshot.claudeBlock { metric("Claude 5h", UsageMetric(costUSD: block.costUSD, totalTokens: block.totalTokens)) }
             }
+            footer
         }
     }
 
     private var largeView: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 10) {
             header
-            metric("Current 5-hour block", entry.currentBlock)
-            metric("Today", entry.today)
-            metric("This month", entry.month)
+            metric("Today · all sources", entry.snapshot.today)
+            metric("This month · all sources", entry.snapshot.month)
+            if let block = entry.snapshot.claudeBlock { metric("Claude Code 5-hour block", UsageMetric(costUSD: block.costUSD, totalTokens: block.totalTokens)) }
+            if !entry.snapshot.agents.isEmpty {
+                Divider()
+                ForEach(entry.snapshot.agents.prefix(3)) { agent in
+                    HStack { Text(agent.agent.capitalized); Spacer(); Text(agent.metric.costUSD, format: .currency(code: "USD")) }.font(.caption)
+                }
+            }
             Spacer(minLength: 0)
-            Text("Sample data · integration pending")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            footer
         }
     }
 
-    private var header: some View {
-        Label("Token Cost", systemImage: "chart.bar.xaxis")
-            .font(.headline)
+    private var header: some View { Label("Token Cost", systemImage: "chart.bar.xaxis").font(.headline) }
+
+    private var footer: some View {
+        Group {
+            if let message = entry.snapshot.statusMessage { Text(message) } else { Text("Updated \(entry.snapshot.updatedAt, style: .time)") }
+        }
+        .font(.caption2)
+        .foregroundStyle(.secondary)
+        .lineLimit(2)
     }
 
-    private func metric(_ title: String, _ value: String) -> some View {
+    private func metric(_ title: String, _ value: UsageMetric) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.title3.weight(.semibold))
+            Text(title).font(.caption).foregroundStyle(.secondary)
+            Text(value.costUSD, format: .currency(code: "USD")).font(.title3.weight(.semibold))
+            Text("\(value.totalTokens.formatted()) tokens").font(.caption2).foregroundStyle(.secondary)
         }
     }
 }
@@ -102,24 +97,15 @@ struct CostWidget: Widget {
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: CostTimelineProvider()) { entry in
-            CostWidgetView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+            CostWidgetView(entry: entry).containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Token Cost")
-        .description("Shows Claude Code token usage and costs.")
+        .description("Shows local AI CLI usage and costs across supported sources.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
 
 @main
-struct CostWidgetWidgetBundle: WidgetBundle {
-    var body: some Widget {
-        CostWidget()
-    }
-}
+struct CostWidgetWidgetBundle: WidgetBundle { var body: some Widget { CostWidget() } }
 
-#Preview(as: .systemMedium) {
-    CostWidget()
-} timeline: {
-    CostEntry(date: .now, currentBlock: "$1.24", today: "$3.87", month: "$42.16")
-}
+#Preview(as: .systemMedium) { CostWidget() } timeline: { CostTimelineProvider().placeholder(in: .init()) }
