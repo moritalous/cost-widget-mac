@@ -8,7 +8,7 @@ struct CostEntry: TimelineEntry {
 
 struct CostTimelineProvider: TimelineProvider {
     func placeholder(in context: Context) -> CostEntry {
-        CostEntry(date: .now, snapshot: UsageSnapshot(updatedAt: .now, today: UsageMetric(costUSD: 3.87, totalTokens: 120_000), month: UsageMetric(costUSD: 42.16, totalTokens: 1_800_000), agents: [AgentBreakdown(agent: "claude", metric: UsageMetric(costUSD: 30, totalTokens: 1_100_000)), AgentBreakdown(agent: "codex", metric: UsageMetric(costUSD: 12.16, totalTokens: 700_000)], claudeBlock: ClaudeBlock(costUSD: 1.24, totalTokens: 42_000, remainingMinutes: 160, range: "10:00–15:00"), statusMessage: nil))
+        CostEntry(date: .now, snapshot: UsageSnapshot(updatedAt: .now, today: UsageMetric(costUSD: 3.87, totalTokens: 120_000), month: UsageMetric(costUSD: 42.16, totalTokens: 1_800_000), agents: [AgentBreakdown(agent: "claude", metric: UsageMetric(costUSD: 30, totalTokens: 1_100_000)), AgentBreakdown(agent: "codex", metric: UsageMetric(costUSD: 12.16, totalTokens: 700_000))], claudeBlock: ClaudeBlock(costUSD: 1.24, totalTokens: 42_000, remainingMinutes: 160, range: "10:00–15:00"), statusMessage: nil))
     }
 
     func getSnapshot(in context: Context, completion: @escaping (CostEntry) -> Void) {
