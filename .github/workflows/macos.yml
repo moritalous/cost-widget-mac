@@ -35,6 +35,8 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             build
+          codesign --deep --force --verbose --sign - build/Build/Products/Release/CostWidget.app
+          codesign --verify --deep --strict --verbose=2 build/Build/Products/Release/CostWidget.app
 
       - name: Package app
         run: |
