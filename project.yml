@@ -34,6 +34,8 @@ targets:
     sources:
       - path: CostWidget
       - path: Shared
+    resources:
+      - path: CostWidget/Resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.moritalous.cost-widget
@@ -54,6 +56,8 @@ targets:
     sources:
       - path: CostWidgetWidget
       - path: Shared
+    resources:
+      - path: CostWidget/Resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.moritalous.cost-widget.widget
