@@ -3,6 +3,7 @@ name: macOS build
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   pull_request: {}
   workflow_dispatch: {}
 permissions:
@@ -29,6 +30,7 @@ jobs:
             -scheme CostWidget \
             -configuration Release \
             -sdk macosx \
+            -destination 'platform=macOS,arch=arm64'
             -arch arm64 \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
@@ -46,3 +48,14 @@ jobs:
         with:
           name: CostWidget-macos-arm64-unsigned
           path: CostWidget-macos-arm64-unsigned.zip
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" `
+            CostWidget-macos-arm64-unsigned.zip `
+            --repo "${GITHUB_REPOSITORY}" `
+            --title "CostWidget ${GITHUB_REF_NAME}" `
+            --generate-notes
