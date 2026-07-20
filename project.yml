@@ -35,6 +35,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.moritalous.cost-widget
         PRODUCT_NAME: CostWidget
+        INFOPLIST_FILE: CostWidget/Info.plist
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
         INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2026 moritalous"
         CODE_SIGNING_ALLOWED: NO
