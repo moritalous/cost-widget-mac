@@ -45,6 +45,12 @@ jobs:
           test "$(plutil -extract CFBundleIdentifier raw -o - build/Build/Products/Release/CostWidget.app/Contents/Info.plist)" = "com.moritalous.cost-widget"
           test "$(plutil -extract CFBundleExecutable raw -o - build/Build/Products/Release/CostWidget.app/Contents/PlugIns/CostWidgetWidget.appex/Contents/Info.plist)" = "CostWidgetWidget"
 
+      - name: Validate PluginKit registration
+        run: |
+          /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f build/Build/Products/Release/CostWidget.app
+          pluginkit -m -A -D -i com.moritalous.cost-widget.widget | tee plugin-registration.txt
+          test -s plugin-registration.txt
+
       - name: Package app
         run: |
           ditto -c -k --keepParent \
