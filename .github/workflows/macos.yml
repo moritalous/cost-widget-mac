@@ -32,7 +32,7 @@ jobs:
             -sdk macosx \
             -destination 'platform=macOS,arch=arm64' \
             -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_ALLOWED=YES \
             CODE_SIGNING_REQUIRED=NO \
             build
           codesign --deep --force --verbose --sign - build/Build/Products/Release/CostWidget.app
