@@ -38,6 +38,13 @@ jobs:
           codesign --deep --force --verbose --sign - build/Build/Products/Release/CostWidget.app
           codesign --verify --deep --strict --verbose=2 build/Build/Products/Release/CostWidget.app
 
+      - name: Validate bundle metadata
+        run: |
+          plutil -lint build/Build/Products/Release/CostWidget.app/Contents/Info.plist
+          plutil -lint build/Build/Products/Release/CostWidget.app/Contents/PlugIns/CostWidgetWidget.appex/Contents/Info.plist
+          test "$(plutil -extract CFBundleIdentifier raw -o - build/Build/Products/Release/CostWidget.app/Contents/Info.plist)" = "com.moritalous.cost-widget"
+          test "$(plutil -extract CFBundleExecutable raw -o - build/Build/Products/Release/CostWidget.app/Contents/PlugIns/CostWidgetWidget.appex/Contents/Info.plist)" = "CostWidgetWidget"
+
       - name: Package app
         run: |
           ditto -c -k --keepParent \
