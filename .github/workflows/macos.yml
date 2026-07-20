@@ -43,6 +43,8 @@ jobs:
             CODE_SIGNING_ALLOWED=YES \
             CODE_SIGNING_REQUIRED=NO \
             build
+          mkdir -p build/Build/Products/Release/CostWidget.app/Contents/Resources
+          cp CostWidget/Resources/Tools/ccusage build/Build/Products/Release/CostWidget.app/Contents/Resources/ccusage
           codesign --force --sign - --entitlements Scripts/ccusage.entitlements build/Build/Products/Release/CostWidget.app/Contents/Resources/ccusage
           codesign --force --sign - --entitlements CostWidget/CostWidget.entitlements build/Build/Products/Release/CostWidget.app
           codesign --verify --deep --strict --verbose=2 build/Build/Products/Release/CostWidget.app
