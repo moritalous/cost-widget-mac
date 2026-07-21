@@ -123,7 +123,7 @@ actor UsageService {
     }
 
     private func run(arguments: [String], homeURL: URL) throws -> Data {
-        guard let executableURL = Bundle.main.url(forResource: "ccusage", withExtension: nil, subdirectory: "Helpers") else {
+        guard let executableURL = Bundle.main.url(forResource: "ccusage", withExtension: nil) else {
             throw UsageError.toolMissing
         }
         let process = Process()
