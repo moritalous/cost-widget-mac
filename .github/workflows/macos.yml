@@ -43,9 +43,11 @@ jobs:
             CODE_SIGNING_ALLOWED=YES \
             CODE_SIGNING_REQUIRED=NO \
             build
-          mkdir -p build/Build/Products/Release/CostWidget.app/Contents/Resources
-          cp CostWidget/Resources/Tools/ccusage build/Build/Products/Release/CostWidget.app/Contents/Resources/ccusage
-          codesign --force --sign - --entitlements Scripts/ccusage.entitlements build/Build/Products/Release/CostWidget.app/Contents/Resources/ccusage
+          mkdir -p build/Build/Products/Release/CostWidget.app/Contents/Helpers
+          cp CostWidget/Resources/Tools/ccusage build/Build/Products/Release/CostWidget.app/Contents/Helpers/ccusage
+          plutil -lint Scripts/ccusage.entitlements
+          plutil -convert binary1 Scripts/ccusage.entitlements -o ccusage-entitlements.plist
+          codesign --force --sign - --entitlements ccusage-entitlements.plist build/Build/Products/Release/CostWidget.app/Contents/Helpers/ccusage
           codesign --force --sign - --entitlements CostWidget/CostWidget.entitlements build/Build/Products/Release/CostWidget.app
           codesign --verify --deep --strict --verbose=2 build/Build/Products/Release/CostWidget.app
           codesign -d --entitlements :- build/Build/Products/Release/CostWidget.app 2>&1 | grep -q "com.apple.security.app-sandbox"
