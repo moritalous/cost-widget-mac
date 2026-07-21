@@ -6,42 +6,30 @@ import WidgetKit
 final class UsageViewModel: ObservableObject {
     @Published private(set) var snapshot = UsageSnapshotStore.load()
     @Published private(set) var isRefreshing = false
-    @Published private(set) var selectedHomePath: String?
+    @Published private(set) var selectedHomePath: String
 
     private let service = UsageService()
-    private let bookmarkKey = "usageHomeBookmark"
 
     init() {
-        selectedHomePath = restoreHomeURL()?.path
+        selectedHomePath = FileManager.default.homeDirectoryForCurrentUser.path
     }
 
     func chooseHomeFolder() {
         let panel = NSOpenPanel()
-        panel.title = "Allow access to your home folder"
-        panel.message = "Cost Widget reads local AI CLI usage logs (such as .claude and .codex) only from the folder you allow."
-        panel.prompt = "Allow access"
+        panel.title = "Choose a home folder"
+        panel.message = "Cost Widget will read local AI CLI usage logs under this folder."
+        panel.prompt = "Use this folder"
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = false
-        panel.directoryURL = FileManager.default.homeDirectoryForCurrentUser
-
+        panel.directoryURL = URL(fileURLWithPath: selectedHomePath)
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        do {
-            let bookmark = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
-            UserDefaults.standard.set(bookmark, forKey: bookmarkKey)
-            selectedHomePath = url.path
-            refresh()
-        } catch {
-            snapshot = failureSnapshot("Could not save folder access: \(error.localizedDescription)")
-        }
+        selectedHomePath = url.path
+        refresh()
     }
 
     func refresh() {
-        guard let homeURL = restoreHomeURL() else {
-            snapshot = .notConfigured
-            return
-        }
         isRefreshing = true
+        let homeURL = URL(fileURLWithPath: selectedHomePath, isDirectory: true)
         Task {
             defer { isRefreshing = false }
             do {
@@ -50,35 +38,14 @@ final class UsageViewModel: ObservableObject {
                 UsageSnapshotStore.save(refreshed)
                 WidgetCenter.shared.reloadAllTimelines()
             } catch {
-                let failed = failureSnapshot(error.localizedDescription)
+                let failed = UsageSnapshot(updatedAt: .now, today: snapshot.today, month: snapshot.month, agents: snapshot.agents, claudeBlock: snapshot.claudeBlock, statusMessage: error.localizedDescription)
                 snapshot = failed
                 UsageSnapshotStore.save(failed)
                 WidgetCenter.shared.reloadAllTimelines()
             }
         }
     }
-
-    private func restoreHomeURL() -> URL? {
-        guard let bookmark = UserDefaults.standard.data(forKey: bookmarkKey) else { return nil }
-        var stale = false
-        guard let url = try? URL(resolvingBookmarkData: bookmark, options: .withSecurityScope, relativeTo: nil, bookmarkDataIsStale: &stale) else {
-            return nil
-        }
-        return url
-    }
-
-    private func failureSnapshot(_ message: String) -> UsageSnapshot {
-        UsageSnapshot(
-            updatedAt: .now,
-            today: snapshot.today,
-            month: snapshot.month,
-            agents: snapshot.agents,
-            claudeBlock: snapshot.claudeBlock,
-            statusMessage: message
-        )
-    }
 }
-
 actor UsageService {
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -88,13 +55,7 @@ actor UsageService {
         return formatter
     }()
 
-    func load(homeURL: URL) throws -> UsageSnapshot {
-        guard homeURL.startAccessingSecurityScopedResource() else {
-            throw UsageError.accessDenied
-        }
-        defer { homeURL.stopAccessingSecurityScopedResource() }
-
-        let calendar = Calendar.current
+    func load(homeURL: URL) throws -> UsageSnapshot {`r`n        let calendar = Calendar.current
         let now = Date.now
         let today = dateFormatter.string(from: now)
         let monthStart = dateFormatter.string(from: calendar.date(from: calendar.dateComponents([.year, .month], from: now)) ?? now)

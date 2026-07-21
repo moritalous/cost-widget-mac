@@ -3,14 +3,12 @@ import Foundation
 struct UsageMetric: Codable, Sendable {
     let costUSD: Double
     let totalTokens: Int
-
     static let empty = UsageMetric(costUSD: 0, totalTokens: 0)
 }
 
 struct AgentBreakdown: Codable, Identifiable, Sendable {
     let agent: String
     let metric: UsageMetric
-
     var id: String { agent }
 }
 
@@ -29,34 +27,32 @@ struct UsageSnapshot: Codable, Sendable {
     let claudeBlock: ClaudeBlock?
     let statusMessage: String?
 
-    static let notConfigured = UsageSnapshot(
-        updatedAt: .now,
-        today: .empty,
-        month: .empty,
-        agents: [],
-        claudeBlock: nil,
-        statusMessage: "Open Cost Widget and allow access to your home folder to read local AI CLI usage logs."
-    )
+    static let notConfigured = UsageSnapshot(updatedAt: .now, today: .empty, month: .empty, agents: [], claudeBlock: nil, statusMessage: "Open Cost Widget and press Refresh to read local AI CLI usage logs.")
 }
 
 enum UsageSnapshotStore {
-    static let appGroupID = "group.com.moritalous.cost-widget"
-    private static let snapshotKey = "usageSnapshot"
+    private static let widgetBundleID = "com.moritalous.cost-widget.widget"
+
+    private static var snapshotURL: URL {
+        let fileManager = FileManager.default
+        if Bundle.main.bundleURL.pathExtension == "appex" {
+            let directory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("CostWidget", isDirectory: true)
+            return directory.appendingPathComponent("usage-snapshot.json")
+        }
+        let home = fileManager.homeDirectoryForCurrentUser
+        return home.appendingPathComponent("Library/Containers/\(widgetBundleID)/Data/Library/Application Support/CostWidget/usage-snapshot.json")
+    }
 
     static func load() -> UsageSnapshot {
-        guard let defaults = UserDefaults(suiteName: appGroupID),
-              let data = defaults.data(forKey: snapshotKey),
-              let snapshot = try? JSONDecoder().decode(UsageSnapshot.self, from: data) else {
-            return .notConfigured
-        }
+        guard let data = try? Data(contentsOf: snapshotURL),
+              let snapshot = try? JSONDecoder().decode(UsageSnapshot.self, from: data) else { return .notConfigured }
         return snapshot
     }
 
     static func save(_ snapshot: UsageSnapshot) {
-        guard let defaults = UserDefaults(suiteName: appGroupID),
-              let data = try? JSONEncoder().encode(snapshot) else {
-            return
-        }
-        defaults.set(data, forKey: snapshotKey)
+        let url = snapshotURL
+        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        guard let data = try? JSONEncoder().encode(snapshot) else { return }
+        try? data.write(to: url, options: .atomic)
     }
 }
