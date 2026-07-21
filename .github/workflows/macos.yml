@@ -45,6 +45,7 @@ jobs:
             build
           mkdir -p build/Build/Products/Release/CostWidget.app/Contents/Helpers
           cp CostWidget/Resources/Tools/ccusage build/Build/Products/Release/CostWidget.app/Contents/Helpers/ccusage
+          codesign --remove-signature build/Build/Products/Release/CostWidget.app/Contents/Helpers/ccusage
           codesign --force --sign - build/Build/Products/Release/CostWidget.app/Contents/Helpers/ccusage
           codesign --force --sign - --entitlements CostWidget/CostWidget.entitlements build/Build/Products/Release/CostWidget.app
           codesign --verify --deep --strict --verbose=2 build/Build/Products/Release/CostWidget.app
