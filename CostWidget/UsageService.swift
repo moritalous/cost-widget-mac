@@ -55,7 +55,8 @@ actor UsageService {
         return formatter
     }()
 
-    func load(homeURL: URL) throws -> UsageSnapshot {`r`n        let calendar = Calendar.current
+    func load(homeURL: URL) throws -> UsageSnapshot {
+        let calendar = Calendar.current
         let now = Date.now
         let today = dateFormatter.string(from: now)
         let monthStart = dateFormatter.string(from: calendar.date(from: calendar.dateComponents([.year, .month], from: now)) ?? now)
