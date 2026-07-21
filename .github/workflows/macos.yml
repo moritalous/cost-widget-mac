@@ -43,9 +43,12 @@ jobs:
             CODE_SIGNING_ALLOWED=YES \
             CODE_SIGNING_REQUIRED=NO \
             build
+          echo "Copying ccusage resource"
           mkdir -p build/Build/Products/Release/CostWidget.app/Contents/Resources
           cp CostWidget/Resources/Tools/ccusage build/Build/Products/Release/CostWidget.app/Contents/Resources/ccusage
+          echo "Signing host application"
           codesign --force --sign - --entitlements CostWidget/CostWidget.entitlements build/Build/Products/Release/CostWidget.app
+          echo "Verifying host application"
           codesign --verify --deep --strict --verbose=2 build/Build/Products/Release/CostWidget.app
           codesign -d --entitlements :- build/Build/Products/Release/CostWidget.app 2>&1 | grep -q "com.apple.security.app-sandbox"
           codesign -d --entitlements :- build/Build/Products/Release/CostWidget.app/Contents/PlugIns/CostWidgetWidget.appex 2>&1 | grep -q "com.apple.security.app-sandbox"
