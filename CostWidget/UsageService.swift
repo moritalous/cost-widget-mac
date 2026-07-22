@@ -1,4 +1,3 @@
-import AppKit
 import Foundation
 import WidgetKit
 
@@ -6,30 +5,30 @@ import WidgetKit
 final class UsageViewModel: ObservableObject {
     @Published private(set) var snapshot = UsageSnapshotStore.load()
     @Published private(set) var isRefreshing = false
-    @Published private(set) var selectedHomePath: String
 
     private let service = UsageService()
+    private let refreshInterval: Duration = .seconds(180)
+    private var refreshLoop: Task<Void, Never>?
 
     init() {
-        selectedHomePath = FileManager.default.homeDirectoryForCurrentUser.path
+        refresh()
+        refreshLoop = Task { [weak self] in
+            while !Task.isCancelled {
+                guard let interval = self?.refreshInterval else { return }
+                try? await Task.sleep(for: interval)
+                self?.refresh()
+            }
+        }
     }
 
-    func chooseHomeFolder() {
-        let panel = NSOpenPanel()
-        panel.title = "Choose a home folder"
-        panel.message = "Cost Widget will read local AI CLI usage logs under this folder."
-        panel.prompt = "Use this folder"
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.directoryURL = URL(fileURLWithPath: selectedHomePath)
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        selectedHomePath = url.path
-        refresh()
+    deinit {
+        refreshLoop?.cancel()
     }
 
     func refresh() {
+        guard !isRefreshing else { return }
         isRefreshing = true
-        let homeURL = URL(fileURLWithPath: selectedHomePath, isDirectory: true)
+        let homeURL = FileManager.default.homeDirectoryForCurrentUser
         Task {
             defer { isRefreshing = false }
             do {
@@ -80,7 +79,7 @@ actor UsageService {
             month: UsageMetric(costUSD: monthReport.totals.totalCost, totalTokens: monthReport.totals.totalTokens),
             agents: agents,
             claudeBlock: block,
-            statusMessage: agents.isEmpty ? "No supported local AI CLI usage logs were found in the selected folder." : nil
+            statusMessage: agents.isEmpty ? "No supported local AI CLI usage logs were found in your home folder." : nil
         )
     }
 
@@ -151,13 +150,11 @@ private struct CCUsageProjection: Decodable {
 }
 
 private enum UsageError: LocalizedError {
-    case accessDenied
     case toolMissing
     case commandFailed(String)
 
     var errorDescription: String? {
         switch self {
-        case .accessDenied: "Folder access was not granted. Choose your home folder again."
         case .toolMissing: "The bundled ccusage executable is missing. Download a new Cost Widget build."
         case let .commandFailed(detail): "ccusage failed: \(detail)"
         }

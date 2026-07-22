@@ -2,10 +2,12 @@ import SwiftUI
 
 @main
 struct CostWidgetApp: App {
+    @StateObject private var model = UsageViewModel()
+
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        MenuBarExtra("Cost Widget", systemImage: "chart.bar.xaxis") {
+            ContentView(model: model)
         }
-        .windowResizability(.contentSize)
+        .menuBarExtraStyle(.window)
     }
 }
