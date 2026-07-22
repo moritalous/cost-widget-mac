@@ -34,9 +34,25 @@ jobs:
           VERSION: ${{ inputs.version }}
         run: |
           mv CostWidget-macos-arm64-adhoc.zip "CostWidget-${VERSION}-macos-arm64-adhoc.zip"
+          cat > release-notes.md <<'EOF'
+          ## Install
+
+          ```bash
+          curl -LO https://github.com/__REPO__/releases/download/v__VERSION__/CostWidget-__VERSION__-macos-arm64-adhoc.zip
+          ditto -xk CostWidget-__VERSION__-macos-arm64-adhoc.zip .
+          pkill -x CostWidget 2>/dev/null || true
+          rm -rf /Applications/CostWidget.app
+          mv CostWidget.app /Applications/
+          open /Applications/CostWidget.app
+          ```
+
+          CostWidget is a menu bar app: after launch, look for the chart icon in the menu bar (no Dock icon). Requires macOS 14+ on Apple Silicon.
+          EOF
+          sed -i "s|__VERSION__|${VERSION}|g; s|__REPO__|${GITHUB_REPOSITORY}|g" release-notes.md
           gh release create "v${VERSION}" \
             "CostWidget-${VERSION}-macos-arm64-adhoc.zip" \
             --repo "${GITHUB_REPOSITORY}" \
             --target "${GITHUB_SHA}" \
             --title "CostWidget v${VERSION}" \
+            --notes-file release-notes.md \
             --generate-notes
