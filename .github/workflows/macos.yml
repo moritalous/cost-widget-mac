@@ -27,9 +27,9 @@ jobs:
 
       - name: Bundle ccusage for Apple Silicon
         run: |
-          npm pack @ccusage/ccusage-darwin-arm64@20.0.17
+          npm pack @ccusage/ccusage-darwin-arm64@20.0.18
           mkdir -p CostWidget/Resources/Tools
-          tar -xzf ccusage-ccusage-darwin-arm64-20.0.17.tgz
+          tar -xzf ccusage-ccusage-darwin-arm64-20.0.18.tgz
           mv package/bin/ccusage CostWidget/Resources/Tools/ccusage
           chmod +x CostWidget/Resources/Tools/ccusage
 
