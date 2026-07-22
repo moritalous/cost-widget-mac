@@ -27,7 +27,7 @@ struct UsageSnapshot: Codable, Sendable {
     let claudeBlock: ClaudeBlock?
     let statusMessage: String?
 
-    static let notConfigured = UsageSnapshot(updatedAt: .now, today: .empty, month: .empty, agents: [], claudeBlock: nil, statusMessage: "Open Cost Widget and press Refresh to read local AI CLI usage logs.")
+    static let notConfigured = UsageSnapshot(updatedAt: .now, today: .empty, month: .empty, agents: [], claudeBlock: nil, statusMessage: "Launch Cost Widget from the menu bar to read local AI CLI usage logs.")
 }
 
 enum UsageSnapshotStore {

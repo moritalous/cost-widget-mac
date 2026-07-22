@@ -1,7 +1,8 @@
+import AppKit
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var model = UsageViewModel()
+    @ObservedObject var model: UsageViewModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -42,9 +43,9 @@ struct ContentView: View {
             }
 
             HStack {
-                Button("Choose home folder…") { model.chooseHomeFolder() }
                 Button(model.isRefreshing ? "Refreshing…" : "Refresh") { model.refresh() }
                     .disabled(model.isRefreshing)
+                Button("Quit") { NSApplication.shared.terminate(nil) }
                 Spacer()
                 Text("Updated \(model.snapshot.updatedAt, style: .time)")
                     .font(.footnote)
@@ -52,7 +53,7 @@ struct ContentView: View {
             }
         }
         .padding(24)
-        .frame(minWidth: 520, minHeight: 310)
+        .frame(width: 460)
     }
 
     private func metric(_ title: String, _ metric: UsageMetric) -> some View {
@@ -66,4 +67,4 @@ struct ContentView: View {
     }
 }
 
-#Preview { ContentView() }
+#Preview { ContentView(model: UsageViewModel()) }
