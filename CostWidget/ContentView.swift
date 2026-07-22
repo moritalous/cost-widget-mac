@@ -51,6 +51,10 @@ struct ContentView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
+
+            Text("CostWidget \(model.appVersion) · ccusage \(model.ccusageVersion)")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
         }
         .padding(24)
         .frame(width: 460)

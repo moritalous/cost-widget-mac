@@ -5,6 +5,9 @@ import WidgetKit
 final class UsageViewModel: ObservableObject {
     @Published private(set) var snapshot = UsageSnapshotStore.load()
     @Published private(set) var isRefreshing = false
+    @Published private(set) var ccusageVersion = "…"
+
+    let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
 
     private let service = UsageService()
     private let refreshInterval: Duration = .seconds(180)
@@ -12,6 +15,10 @@ final class UsageViewModel: ObservableObject {
 
     init() {
         refresh()
+        Task { [weak self] in
+            guard let service = self?.service else { return }
+            self?.ccusageVersion = await service.toolVersion()
+        }
         refreshLoop = Task { [weak self] in
             while !Task.isCancelled {
                 guard let interval = self?.refreshInterval else { return }
@@ -53,6 +60,16 @@ actor UsageService {
         formatter.dateFormat = "yyyyMMdd"
         return formatter
     }()
+
+    func toolVersion() -> String {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        guard let data = try? run(arguments: ["--version"], homeURL: home),
+              let text = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
+              let version = text.split(whereSeparator: \.isWhitespace).last, !version.isEmpty else {
+            return "unknown"
+        }
+        return String(version)
+    }
 
     func load(homeURL: URL) throws -> UsageSnapshot {
         let calendar = Calendar.current
