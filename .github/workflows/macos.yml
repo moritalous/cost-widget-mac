@@ -50,7 +50,10 @@ jobs:
           codesign --force --sign - build/Build/Products/Release/CostWidget.app
           echo "Verifying host application"
           codesign --verify --deep --strict --verbose=2 build/Build/Products/Release/CostWidget.app
-          codesign -d --entitlements :- build/Build/Products/Release/CostWidget.app 2>&1 | grep -q "com.apple.security.app-sandbox"
+          if codesign -d --entitlements :- build/Build/Products/Release/CostWidget.app 2>&1 | grep -q "com.apple.security.app-sandbox"; then
+            echo "Host app must not carry the App Sandbox entitlement (it writes into the widget container directly)" >&2
+            exit 1
+          fi
           codesign -d --entitlements :- build/Build/Products/Release/CostWidget.app/Contents/PlugIns/CostWidgetWidget.appex 2>&1 | grep -q "com.apple.security.app-sandbox"
 
       - name: Validate bundle metadata

@@ -44,7 +44,7 @@ struct ContentView: View {
             HStack {
                 Button("Choose home folder…") { model.chooseHomeFolder() }
                 Button(model.isRefreshing ? "Refreshing…" : "Refresh") { model.refresh() }
-                    .disabled(model.isRefreshing || model.selectedHomePath == nil)
+                    .disabled(model.isRefreshing)
                 Spacer()
                 Text("Updated \(model.snapshot.updatedAt, style: .time)")
                     .font(.footnote)
