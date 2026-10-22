@@ -1,0 +1,56 @@
+name: Update ccusage
+
+on:
+  schedule:
+    - cron: "17 0 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Open a pull request for a newer ccusage
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          current="$(tr -d '[:space:]' < .ccusage-version)"
+          latest="$(npm view @ccusage/ccusage-darwin-arm64 version)"
+          echo "Bundled ccusage: ${current}, latest: ${latest}"
+          if [ "${current}" = "${latest}" ]; then
+            echo "Already up to date"
+            exit 0
+          fi
+
+          branch="ccusage/${latest}"
+          if git ls-remote --exit-code --heads origin "${branch}" >/dev/null; then
+            echo "Branch ${branch} already exists; skipping"
+            exit 0
+          fi
+
+          echo "${latest}" > .ccusage-version
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "${branch}"
+          git commit -am "Update bundled ccusage to ${latest}"
+          git push origin "${branch}"
+
+          gh pr create \
+            --base "${{ github.event.repository.default_branch }}" \
+            --head "${branch}" \
+            --title "Update bundled ccusage to ${latest}" \
+            --body "Updates the bundled ccusage from ${current} to ${latest}.
+
+          Release notes: https://github.com/ccusage/ccusage/releases/tag/v${latest}"
+
+          # Pull requests opened with GITHUB_TOKEN do not trigger pull_request workflows,
+          # so start the macOS build on the new branch explicitly.
+          gh workflow run macos.yml --ref "${branch}"
