@@ -6,6 +6,17 @@ on:
       version:
         description: "Version to release without the v prefix (e.g. 0.2.0)"
         required: true
+  workflow_call:
+    inputs:
+      version:
+        description: "Version to release without the v prefix (e.g. 0.2.0)"
+        type: string
+        required: true
+      ref:
+        description: "Commit to build and tag. Empty uses the triggering commit."
+        type: string
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -15,6 +26,7 @@ jobs:
     uses: ./.github/workflows/macos.yml
     with:
       version: ${{ inputs.version }}
+      ref: ${{ inputs.ref }}
 
   release:
     needs: build
@@ -32,6 +44,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
+          TARGET: ${{ inputs.ref || github.sha }}
         run: |
           mv CostWidget-macos-arm64-adhoc.zip "CostWidget-${VERSION}-macos-arm64-adhoc.zip"
           cat > release-notes.md <<'EOF'
@@ -52,7 +65,7 @@ jobs:
           gh release create "v${VERSION}" \
             "CostWidget-${VERSION}-macos-arm64-adhoc.zip" \
             --repo "${GITHUB_REPOSITORY}" \
-            --target "${GITHUB_SHA}" \
+            --target "${TARGET}" \
             --title "CostWidget v${VERSION}" \
             --notes-file release-notes.md \
             --generate-notes

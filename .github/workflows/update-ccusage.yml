@@ -6,19 +6,30 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: write
-  pull-requests: write
-  actions: write
+  contents: read
+
+concurrency:
+  group: update-ccusage
 
 jobs:
-  update:
+  prepare:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: write
+    outputs:
+      updated: ${{ steps.bump.outputs.updated }}
+      current: ${{ steps.bump.outputs.current }}
+      latest: ${{ steps.bump.outputs.latest }}
+      branch: ${{ steps.bump.outputs.branch }}
+      sha: ${{ steps.bump.outputs.sha }}
+      app_version: ${{ steps.bump.outputs.app_version }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
 
-      - name: Open a pull request for a newer ccusage
+      - name: Commit a newer ccusage to a staging branch
+        id: bump
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -27,14 +38,22 @@ jobs:
           echo "Bundled ccusage: ${current}, latest: ${latest}"
           if [ "${current}" = "${latest}" ]; then
             echo "Already up to date"
+            echo "updated=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
+          # A leftover branch means an earlier attempt for this version failed and has an open PR.
           branch="ccusage/${latest}"
           if git ls-remote --exit-code --heads origin "${branch}" >/dev/null; then
             echo "Branch ${branch} already exists; skipping"
+            echo "updated=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+
+          last_tag="$(gh release view --repo "${GITHUB_REPOSITORY}" --json tagName --jq .tagName)"
+          IFS=. read -r major minor patch <<< "${last_tag#v}"
+          app_version="${major}.${minor}.$((patch + 1))"
+          echo "Next app version: ${app_version}"
 
           echo "${latest}" > .ccusage-version
           git config user.name "github-actions[bot]"
@@ -43,14 +62,75 @@ jobs:
           git commit -am "Update bundled ccusage to ${latest}"
           git push origin "${branch}"
 
+          {
+            echo "updated=true"
+            echo "current=${current}"
+            echo "latest=${latest}"
+            echo "branch=${branch}"
+            echo "sha=$(git rev-parse HEAD)"
+            echo "app_version=${app_version}"
+          } >> "$GITHUB_OUTPUT"
+
+  verify:
+    needs: prepare
+    if: needs.prepare.outputs.updated == 'true'
+    uses: ./.github/workflows/macos.yml
+    with:
+      version: ${{ needs.prepare.outputs.app_version }}
+      ref: ${{ needs.prepare.outputs.sha }}
+
+  promote:
+    needs: [prepare, verify]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Check out staged commit
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+
+      - name: Fast-forward main to the staged commit
+        env:
+          BRANCH: ${{ needs.prepare.outputs.branch }}
+        run: |
+          # Fails without overwriting anything if main moved since prepare.
+          git push origin "HEAD:refs/heads/main"
+          git push origin --delete "${BRANCH}"
+
+  release:
+    needs: [prepare, promote]
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release.yml
+    with:
+      version: ${{ needs.prepare.outputs.app_version }}
+      ref: ${{ needs.prepare.outputs.sha }}
+
+  report-failure:
+    needs: [prepare, verify, promote]
+    if: failure() && needs.prepare.outputs.updated == 'true' && needs.promote.result != 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Open a pull request for manual review
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURRENT: ${{ needs.prepare.outputs.current }}
+          LATEST: ${{ needs.prepare.outputs.latest }}
+          BRANCH: ${{ needs.prepare.outputs.branch }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
           gh pr create \
-            --base "${{ github.event.repository.default_branch }}" \
-            --head "${branch}" \
-            --title "Update bundled ccusage to ${latest}" \
-            --body "Updates the bundled ccusage from ${current} to ${latest}.
+            --repo "${GITHUB_REPOSITORY}" \
+            --base "main" \
+            --head "${BRANCH}" \
+            --title "Update bundled ccusage to ${LATEST}" \
+            --body "Updates the bundled ccusage from ${CURRENT} to ${LATEST}.
 
-          Release notes: https://github.com/ccusage/ccusage/releases/tag/v${latest}"
+          The automatic release was skipped because verification or promotion failed: ${RUN_URL}
 
-          # Pull requests opened with GITHUB_TOKEN do not trigger pull_request workflows,
-          # so start the macOS build on the new branch explicitly.
-          gh workflow run macos.yml --ref "${branch}"
+          Release notes: https://github.com/ccusage/ccusage/releases/tag/v${LATEST}"

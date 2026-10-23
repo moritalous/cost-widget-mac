@@ -12,6 +12,11 @@ on:
         type: string
         required: false
         default: ""
+      ref:
+        description: "Commit to build. Empty builds the triggering commit."
+        type: string
+        required: false
+        default: ""
 permissions:
   contents: read
 
@@ -24,6 +29,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref }}
 
       - name: Bundle ccusage for Apple Silicon
         run: |
@@ -33,6 +40,28 @@ jobs:
           tar -xzf "ccusage-ccusage-darwin-arm64-${ccusage_version}.tgz"
           mv package/bin/ccusage CostWidget/Resources/Tools/ccusage
           chmod +x CostWidget/Resources/Tools/ccusage
+
+      - name: Smoke test bundled ccusage
+        run: |
+          tool=CostWidget/Resources/Tools/ccusage
+          expected="ccusage $(tr -d '[:space:]' < .ccusage-version)"
+          actual="$("$tool" --version)"
+          echo "${actual}"
+          test "${actual}" = "${expected}"
+          # Run the same commands the app runs against an empty home and check the JSON shape it decodes.
+          empty_home="$(mktemp -d)"
+          HOME="$empty_home" "$tool" daily --json --by-agent --since "$(date +%Y%m%d)" > daily.json
+          HOME="$empty_home" "$tool" monthly --json --by-agent --since "$(date +%Y%m01)" > monthly.json
+          HOME="$empty_home" "$tool" claude blocks --json --active > blocks.json
+          python3 - <<'PY'
+          import json
+          for name, key in (("daily", "daily"), ("monthly", "monthly")):
+              report = json.load(open(f"{name}.json"))
+              assert isinstance(report[key], list), name
+              float(report["totals"]["totalCost"])
+              int(report["totals"]["totalTokens"])
+          assert isinstance(json.load(open("blocks.json"))["blocks"], list)
+          PY
 
       - name: Install XcodeGen
         run: |
@@ -100,3 +129,5 @@ jobs:
         with:
           name: CostWidget-macos-arm64-adhoc
           path: CostWidget-macos-arm64-adhoc.zip
+          # The auto-update workflow builds twice in one run (verify, then release).
+          overwrite: true
