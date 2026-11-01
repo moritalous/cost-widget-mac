@@ -41,3 +41,11 @@ git push origin v0.1.0
 ```
 
 On the Mac, right-click `CostWidget.app` and choose **Open** the first time if macOS blocks an unsigned app. Then add **Token Cost** from the widget gallery.
+
+## Automatic ccusage updates and releases
+
+1. `Update ccusage` runs daily, and opens a `ccusage/<version>` pull request when npm has a newer ccusage.
+2. When the `macOS build` on that branch succeeds, `Auto release` squash-merges the pull request, closes older `ccusage/*` pull requests, and dispatches `Release` with the next patch version.
+3. `Release` builds the merged commit and publishes the GitHub Release.
+
+If the build fails, the pull request stays open and nothing is released.
