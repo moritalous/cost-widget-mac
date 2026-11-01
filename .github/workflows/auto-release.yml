@@ -1,0 +1,75 @@
+name: Auto release
+
+# Merges an "Update bundled ccusage" pull request once its macOS build has
+# succeeded, then dispatches the Release workflow with the next patch version.
+
+on:
+  workflow_run:
+    workflows: ["macOS build"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: auto-release
+  cancel-in-progress: false
+
+jobs:
+  merge-and-release:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      startsWith(github.event.workflow_run.head_branch, 'ccusage/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      BRANCH: ${{ github.event.workflow_run.head_branch }}
+      TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+    steps:
+      - name: Merge the verified update pull request
+        id: merge
+        run: |
+          pr="$(gh pr list --head "${BRANCH}" --base "${DEFAULT_BRANCH}" --state open --json number,headRefOid,author \
+            --jq '[.[] | select(.author.login == "app/github-actions" or .author.login == "github-actions[bot]")][0]')"
+          if [ -z "${pr}" ] || [ "${pr}" = "null" ]; then
+            echo "No open pull request from github-actions for ${BRANCH}; nothing to do"
+            echo "merged=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          number="$(jq -r .number <<<"${pr}")"
+          head_sha="$(jq -r .headRefOid <<<"${pr}")"
+          # Only merge exactly the commit that the successful build verified.
+          if [ "${head_sha}" != "${TESTED_SHA}" ]; then
+            echo "PR #${number} head ${head_sha} differs from the built commit ${TESTED_SHA}; skipping"
+            echo "merged=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          gh pr merge "${number}" --squash --delete-branch --match-head-commit "${TESTED_SHA}"
+          echo "merged=true" >> "$GITHUB_OUTPUT"
+
+      - name: Close superseded ccusage pull requests
+        if: steps.merge.outputs.merged == 'true'
+        run: |
+          gh pr list --state open --base "${DEFAULT_BRANCH}" --json number,headRefName \
+            --jq '.[] | select(.headRefName | startswith("ccusage/")) | .number' |
+          while read -r number; do
+            gh pr close "${number}" --delete-branch \
+              --comment "Superseded by a newer bundled ccusage update that was merged and released automatically."
+          done
+
+      - name: Dispatch the Release workflow
+        if: steps.merge.outputs.merged == 'true'
+        run: |
+          latest_tag="$(gh release view --json tagName --jq .tagName)"
+          latest="${latest_tag#v}"
+          IFS=. read -r major minor patch <<<"${latest}"
+          next="${major}.${minor}.$((patch + 1))"
+          echo "Releasing ${next} (previous: ${latest})"
+          gh workflow run release.yml --ref "${DEFAULT_BRANCH}" -f version="${next}"
