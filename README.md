@@ -44,8 +44,10 @@ On the Mac, right-click `CostWidget.app` and choose **Open** the first time if m
 
 ## Automatic ccusage updates and releases
 
-1. `Update ccusage` runs daily, and opens a `ccusage/<version>` pull request when npm has a newer ccusage.
-2. When the `macOS build` on that branch succeeds, `Auto release` squash-merges the pull request, closes older `ccusage/*` pull requests, and dispatches `Release` with the next patch version.
+1. `Update ccusage` runs daily, and opens a `ccusage/<version>` pull request when npm has a newer ccusage (or reuses the open one if it already exists).
+2. In the same run, it builds that commit with the reusable `macOS build` workflow. If the build succeeds, it squash-merges the pull request, closes older `ccusage/*` pull requests, and dispatches `Release` with the next patch version.
 3. `Release` builds the merged commit and publishes the GitHub Release.
+
+Everything happens inside one workflow run on purpose: runs started with `GITHUB_TOKEN` do not fire `workflow_run` events, so a separate workflow listening for the build to finish would never start.
 
 If the build fails, the pull request stays open and nothing is released.
