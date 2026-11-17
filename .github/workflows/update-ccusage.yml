@@ -9,7 +9,8 @@ name: Update ccusage
 
 on:
   schedule:
-    - cron: "17 0 * * *"
+    # 18:17 UTC = 03:17 JST
+    - cron: "17 18 * * *"
   workflow_dispatch: {}
 
 permissions:
